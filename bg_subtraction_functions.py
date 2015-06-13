@@ -18,18 +18,15 @@ def subtract_bg(frame, bg_mask):
 def write_frame_and_bg(frame, bg_mask, name):
     """write frame and bg_mask to current directory with standardized format"""
     time_stamp = str(time.time())
-    frame_file = open('_'.join(['frame', time_stamp, name]), 'w')
-    mask_file = open('_'.join(['frame', time_stamp, name]), 'w')
-    frame_file.write(frame)
-    mask_file.write(bg_mask)
-    frame_file.close()
-    mask_file.close()
+    cv2.imwrite('_'.join(['frame', time_stamp, name])+'.png', frame)
+    cv2.imwrite('_'.join(['bgmask', time_stamp, name])+'.png', bg_mask)
 
 def main(video_file_path):
     """open video and return each frame and bg mask"""
     # get file name
-    name = str(video_file_path.split('/')[-1])
-
+    #requires '/' path delimiting and a file name starting with '.'
+    name = str(video_file_path.split('/')[-1].split('.')[0]) 
+    
     # open video
     cap = cv2.VideoCapture(video_file_path) 
 
