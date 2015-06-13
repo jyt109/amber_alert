@@ -1,6 +1,11 @@
 import cv2
 import time
 
+from boto.s3.connection import S3Connection
+from boto.s3.key import Key
+
+from aws_keys import get_aws_keys
+
 def get_bg_mask(frame, bg_subtractor):
     """update bg_subtractor with new frame and return the updated mask"""
     bg_mask = bg_subtractor.apply(frame)
@@ -14,7 +19,6 @@ def subtract_bg(frame, bg_mask):
             if not bg_mask[i, j]:
                 frame[i, j] = 0
     return frame
-
 
 def get_bounding_box(frame, mask, bounding_shape=(1000, 1200, 650, 800)):
     """
@@ -53,30 +57,50 @@ def write_frame_mask(frame, bg_mask, name):
     cv2.imwrite('_'.join(['frame', time_stamp, name])+'.png', frame)
     cv2.imwrite('_'.join(['bgmask', time_stamp, name])+'.png', bg_mask)
 
+def write_to_s3(frame, bg_mask, bucket, name):
+    """create unique names and write files to S3 for import to Spark"""
+    # get unique names for frame and bg_mask
+    time_stamp = str(time.time())
+    frame_name = '_'.join(['frame', time_stamp, name])+'.txt'
+    bg_mask_name = '_'.join(['bgmask', time_stamp, name])+'.txt'
+
+    # write frame to s3
+    frame_s3 = Key(bucket)
+    frame_s3.key = frame_name
+    frame_s3.set_contents_from_string(frame.tostring())
+
+    # write bg_mask to s3
+    bg_mask_s3 = Key(bucket)
+    bg_mask_s3.key = bg_mask_name
+    bg_mask_s3.set_contents_from_string(frame.tostring())
+
 
 def main(video_file_path):
     """open video and return each frame and bg mask"""
+    # instantiate AWS bucket
+    AWS_ACCESS, AWS_SECRET = get_aws_keys()
+    conn = S3Connection(AWS_ACCESS, AWS_SECRET)
+    bucket = conn.create_bucket('amber-alert-jyt109')
+
     # get file name
     #requires '/' path delimiting and a file name starting with '.'
-    name = str(video_file_path.split('/')[-1].split('.')[0]) 
+    name = str(video_file_path.split('/')[-1].split('.')[0])
 
     # open video
     cap = cv2.VideoCapture(video_file_path) 
 
     # instantiate bg subtractor
-    bg_subtractor = cv2.createBackgroundSubtractorMOG2()
+    bg_subtractor = cv2.BackgroundSubtractorMOG2()
 
     # read in each frame and save the frame and bg mask
     while cap.isOpened():
         success, frame = cap.read()
         if success:
             bg_mask = get_bg_mask(frame, bg_subtractor)
-            keep_bool = discard_image_decision_rule(frame, bg_mask)
-            if keep_bool:
-                print 'kept frame...'
-                write_frame_mask(frame, bg_mask, name)
+            print "writing frame-mask combo to S3"
+            write_to_s3(frame, bg_mask, bucket, name)
         else:
             raise Exception('Cannot read the video / Done reading ...')
 
 if __name__ == '__main__':
-    main('traffic_video.mov')
+    main('test.avi')
