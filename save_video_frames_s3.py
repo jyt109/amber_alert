@@ -1,4 +1,4 @@
-import cv2
+import cv2 # OpenCV 3.0.0
 import boto
 from aws_keys import get_aws_keys
 
@@ -90,12 +90,12 @@ class SaveVideoFramesS3(object):
         file_name = '%s_%s.txt' % (ith_frame, self.video_name)
 
         # Make the file objects for frame and mask
-        frame_file = self.bucket_conn.new_key('frame/%s', file_name)
-        mask_file = self.bucket_conn.new_key('mask/%s', file_name)
+        frame_file = self.bucket_conn.new_key('frame/%s' % file_name)
+        mask_file = self.bucket_conn.new_key('mask/%s' % file_name)
 
-        # Write to the file objects for frame and mask
-        frame_file.set_contents_from_string(frame.tostring())
-        mask_file.set_contents_from_string(mask.tostring())
+        # Write to the file objects for frame and mask as a list of list (as a string)
+        frame_file.set_contents_from_string(str(frame.tolist()))
+        mask_file.set_contents_from_string(str(mask.tolist()))
 
         print 'Written Frame and Mask', file_name
 
@@ -105,7 +105,7 @@ class SaveVideoFramesS3(object):
         save the frames we are going to keep to a designated s3 bucket
         """
         video = cv2.VideoCapture(self.video_path)
-        bg_subtractor = cv2.BackgroundSubtractorMOG2()
+        bg_subtractor = cv2.createBackgroundSubtractorMOG2()
 
         ith_frame = 0
         while video.isOpened():
