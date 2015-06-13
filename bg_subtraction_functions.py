@@ -2,19 +2,30 @@ import cv2
 import time
 
 def get_bg_mask(frame, bg_subtractor):
-    """update bg_subtractor with new frame and return the updated mask"""
-    bg_mask = bg_subtractor.apply(frame)
-    return bg_mask
+    """
+    Produce mask using background subtractor
 
-def subtract_bg(frame, bg_mask):
-    """subtract bg from frame by setting each mask value to 0"""
-    width, height = bg_mask.shape
+    :param frame: The image frame as numpy array
+    :param bg_subtractor: OpenCV background subtractor class instance
+    :return: mask as numpy array
+    """
+    mask = bg_subtractor.apply(frame)
+    return mask
+
+def subtract_bg(frame, mask):
+    """
+    Subtract mask from frame by setting each mask value to 0
+
+    :param frame: Image frame as numpy array
+    :param mask: Mask frame as numpy array
+    :return: Image frame with background mask subtracted
+    """
+    width, height = mask.shape
     for i in range(width):
         for j in range(height):
-            if not bg_mask[i, j]:
+            if not mask[i, j]:
                 frame[i, j] = 0
     return frame
-
 
 def get_bounding_box(frame, mask, bounding_shape=(1000, 1200, 650, 800)):
     """
@@ -39,7 +50,7 @@ def discard_image_decision_rule(frame, mask):
 
     :param frame: bounding-box-frame (numpy.array)
     :param mask: bounding-box-mask (numpy.array)
-    :return:
+    :return: Boolean
     """
     bound_box_frame, bound_box_mask = get_bounding_box(frame, mask)
     if bound_box_mask.mean() > .3 * 255.0:  # max value of mask pixel is 255
@@ -47,11 +58,11 @@ def discard_image_decision_rule(frame, mask):
     else:
         return False
 
-def write_frame_mask(frame, bg_mask, name):
+def write_frame_mask(frame, mask, name):
     """write frame and bg_mask to current directory with standardized format"""
     time_stamp = str(time.time())
     cv2.imwrite('_'.join(['frame', time_stamp, name])+'.png', frame)
-    cv2.imwrite('_'.join(['bgmask', time_stamp, name])+'.png', bg_mask)
+    cv2.imwrite('_'.join(['mask', time_stamp, name])+'.png', mask)
 
 
 def main(video_file_path):
