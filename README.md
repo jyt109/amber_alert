@@ -12,7 +12,7 @@ The goal of this project is to leverage Spark to analysis video feeds of car tra
 that are described in AMBER Alert reports. The following flow chart show the components and architecture of the
 product
 
-![flow_chart](images/flow_chart.png)
+![flow_chart](images/flow_chart2.png)
 
 ##Streaming 
 The actual application will be using a live video feed from a traffic cam. The images of the live feed will be 
